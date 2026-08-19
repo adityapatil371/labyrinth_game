@@ -116,11 +116,30 @@ Current status: 4 tests, all passing.
 
 ## Repository and CI
 
-GitHub: `adityapatil371/labyrinth_game` — **private**. Remote protocol: ssh.
+GitHub: `adityapatil371/labyrinth_game` — **public**. Remote protocol: ssh.
 
-- `main` is the default branch and holds the scaffold commit. Everything after
-  that goes on a feature branch and merges via pull request; do not commit
-  directly to `main`.
+The repo is public specifically so branch protection is available: GitHub
+gates that feature behind Pro on private repos (verified — the protection and
+rulesets endpoints returned 403 "Upgrade to GitHub Pro or make this repository
+public" while private, and 404 "Branch not protected" immediately after the
+flip).
+
+`main` is protected, and this is **enforced by GitHub, not by convention**:
+
+- Changes must go through a pull request (0 approvals required, so a solo
+  author is not locked out).
+- The `verify gate` status check must pass before merge. `strict` is on, so a
+  branch must also be up to date with `main`.
+- `enforce_admins` is on: the rules apply to the repo owner too.
+- Force pushes and branch deletion are disabled on `main`.
+
+Verified by attempting a direct push, which was rejected with
+`GH006: Protected branch update failed` / `Changes must be made through a
+pull request` / `Required status check "verify gate" is expected`.
+
+If the required check is ever renamed, the protection rule must be updated to
+match the new job name, or it can never pass. The context string is the
+workflow job's `name:` — currently `verify gate` in `.github/workflows/ci.yml`.
 - `.github/workflows/ci.yml` runs the verify gate (`rustc --version &&
   cargo --version && cargo check`, then `cargo test`) on push to `main` and on
   every PR, on `ubuntu-latest`.
@@ -138,7 +157,11 @@ GitHub: `adityapatil371/labyrinth_game` — **private**. Remote protocol: ssh.
 - Behaviour changes go spec -> failing test -> code. Add the SPEC line, add the
   test, watch it fail for the right reason, then implement.
 - Refactors change no behaviour: the 4 tests stay green throughout.
-- Work on a branch, merge via PR, keep CI green.
+- Work on a branch, merge via PR, keep CI green. Direct pushes to `main` are
+  rejected by GitHub.
+- This repo sets a local `user.email` of `adityapatil371@users.noreply.github.com`
+  so the public history carries no personal address. Do not override it with
+  `--author` or a global identity when committing here.
 - Numbers in docs carry the command that produced them.
 - Claims about Bevy or the toolchain are marked verified or assumed. Assumed is
   the default.
