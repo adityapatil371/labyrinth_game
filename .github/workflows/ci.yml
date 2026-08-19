@@ -12,6 +12,10 @@ jobs:
   verify:
     name: verify gate
     runs-on: ubuntu-latest
+    # Without this a hung step runs to GitHub's 6h job limit. Since this job
+    # is a required status check, a hang would make main unmergeable rather
+    # than just slow. Fail fast and visibly instead.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -19,9 +23,16 @@ jobs:
       # docs/linux_dependencies.md (bevy 0.19.1), Ubuntu section.
       # The dev machine is macOS; these are needed only on Linux runners.
       - name: Install Bevy Linux dependencies
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y \
+          # Observed failure: apt-get update retried an unreachable
+          # azure.archive.ubuntu.com mirror for 38 minutes with no timeout.
+          # Bound the retries, and do not let an index refresh failure block
+          # the install - the packages may already be cached on the image.
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=15 || true
+          sudo apt-get install -y --no-install-recommends \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=15 \
             g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
 
       - uses: dtolnay/rust-toolchain@stable
