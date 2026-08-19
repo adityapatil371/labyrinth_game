@@ -142,10 +142,16 @@ match the new job name, or it can never pass. The context string is the
 workflow job's `name:` — currently `verify gate` in `.github/workflows/ci.yml`.
 - `.github/workflows/ci.yml` runs the verify gate (`rustc --version &&
   cargo --version && cargo check`, then `cargo test`) on push to `main` and on
-  every PR, on `ubuntu-latest`.
-- The runner installs Bevy's Ubuntu system packages, taken verbatim from the
-  `docs/linux_dependencies.md` shipped in the bevy 0.19.1 crate. The dev
-  machine is macOS and needs none of them.
+  every PR, on `macos-latest`.
+- macOS runs Bevy with no system packages, matching the dev platform. CI was
+  originally on `ubuntu-latest`, but four consecutive runs hung in
+  `apt-get update` against an unresponsive `azure.archive.ubuntu.com` mirror
+  (one sat silent for 29.5 minutes). If Linux coverage is wanted, add a second
+  job and pin its apt sources to `archive.ubuntu.com` — do not move this job
+  back.
+- The job sets `timeout-minutes: 30`. A required check that hangs makes `main`
+  unmergeable, so hangs must fail fast. Note GitHub reports a job timeout as
+  `cancelled`, not `failure`.
 - Tests are headless, so CI needs no GPU or display.
 - CI cost note: the dev profile builds dependencies at `opt-level = 3`, so an
   uncached run compiles ~550 crates. `Swatinem/rust-cache` caches that; if CI
