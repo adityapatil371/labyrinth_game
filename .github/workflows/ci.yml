@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  verify:
+    name: verify gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Package list taken verbatim from Bevy's shipped
+      # docs/linux_dependencies.md (bevy 0.19.1), Ubuntu section.
+      # The dev machine is macOS; these are needed only on Linux runners.
+      - name: Install Bevy Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      # Bevy is ~550 crates and builds at opt-level 3 in the dev profile,
+      # so an uncached run is slow. This caches the dependency build.
+      - uses: Swatinem/rust-cache@v2
+
+      # The same gate documented in CLAUDE.md.
+      - name: Toolchain verify command
+        run: rustc --version && cargo --version && cargo check
+
+      # Tests are headless (MinimalPlugins) — no GPU or display needed.
+      - name: Tests
+        run: cargo test

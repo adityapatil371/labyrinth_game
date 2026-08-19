@@ -1,0 +1,24 @@
+# Dev-only fast-iteration aliases.
+#
+# Bevy's `dynamic_linking` feature links Bevy as a shared library.
+# ASSUMED (Bevy's setup guide claims a link-time win; not measured on this
+# machine — measure before relying on it). It is deliberately NOT
+# listed in Cargo.toml's [dependencies] features: shipping a binary built with
+# it requires distributing libbevy_dylib alongside the executable, so release
+# builds must never enable it. Keeping it here means `cargo build --release`
+# cannot pick it up by accident.
+#
+# Use these for day-to-day iteration:
+[alias]
+rund = "run --features bevy/dynamic_linking"
+checkd = "check --features bevy/dynamic_linking"
+
+# Linker: intentionally unset.
+# VERIFIED (bevy.org/learn/quick-start/getting-started/setup, 2026-08-19, read
+# via summarizer not raw page): the macOS default system linker is faster than
+# LLD, so no [target.aarch64-apple-darwin] override is configured here.
+# VERIFIED on this machine: `ld -v` -> ld-1267; arm64 is absent from its
+# "will use ld-classic for" list.
+# ASSUMED: that ld-1267 is the linker Bevy's docs call "ld-prime" (inferred
+# from the version and the ld-classic exclusion list, not confirmed).
+# No alternative linker installed: lld/mold/wild/zld all absent (`command -v`).

@@ -1,0 +1,11 @@
+# Rust build artifacts.
+# Measured on this project after one dev build:
+#   $ du -sh target  ->  4.8G   (2026-08-19)
+/target
+
+# macOS
+.DS_Store
+
+# Editor/IDE
+.idea/
+*.swp
