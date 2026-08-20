@@ -8,6 +8,7 @@ publish = false
 
 [dependencies]
 bevy = "0.19.1"
+bevy_egui = "0.42.0"
 
 # --- Fast iteration builds ---
 # Source: https://bevy.org/learn/quick-start/getting-started/setup (verified 2026-08-19)

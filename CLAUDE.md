@@ -10,6 +10,7 @@ a camera, a ground plane, a cube, and a light. There is no game yet.
 | rustc | 1.95.0 | `rustc --version` |
 | cargo | 1.95.0 | `cargo --version` |
 | bevy | 0.19.1 | `grep bevy Cargo.toml` |
+| bevy_egui | 0.42.0 | `grep bevy_egui Cargo.toml` |
 | edition | 2024 | `Cargo.toml` |
 | target | aarch64-apple-darwin | `rustup show` |
 
@@ -104,15 +105,49 @@ not against what seems familiar.
 
 ## Code
 
-`src/main.rs` is the whole program. Its `# SPEC` doc comment lists four
-numbered claims (S1–S4); each has a corresponding test in the `tests` module.
+Third-person character controller test scene. It exists to tune game feel:
+the code is scaffolding, the numbers are the deliverable.
 
-Tests run headless — `MinimalPlugins` + `AssetPlugin` + `init_asset::<Mesh>()`
-and `init_asset::<StandardMaterial>()`. No window, no GPU. `StandardMaterial`
-is normally registered by the heavyweight `MaterialPlugin`, which is why the
-test app registers it directly.
+| File | Role |
+|---|---|
+| `src/tuning.rs` | **Every** tunable movement and camera number, in one struct. Nothing elsewhere may hard-code one. |
+| `src/collision.rs` | Hand-rolled swept AABB. Pure functions, no engine state. |
+| `src/player.rs` | Feel logic as free functions, plus the `move_player` system. |
+| `src/camera.rs` | Orbit camera: follow lag, directional lead, pitch clamp. |
+| `src/scene.rs` | Level geometry, spawning, cursor capture. |
+| `src/debug_ui.rs` | Live egui tuning panel (F1). |
 
-Current status: 4 tests, all passing.
+Each module carries a `# SPEC` block of numbered claims, and every claim has
+a test.
+
+### Rules specific to this codebase
+
+- **No magic numbers.** A movement or camera value belongs in `Tuning`. Level
+  layout belongs in the named constants at the top of `scene.rs` — it is fixed
+  geometry, not something you tune while playing.
+- **Physics never moves the player.** Velocity is computed outright and passed
+  to `move_and_slide`, which only ever *subtracts* blocked motion. There is no
+  solver and no force. Keep it that way.
+- **Collision and visuals share one source.** `spawn_level` renders meshes from
+  the same `Level::blockers` list collision uses, so they cannot drift.
+- If you add a field to `Tuning`, add a control for it in `debug_ui.rs`. A
+  tunable with no slider defeats the purpose of the build.
+
+### Testing
+
+Headless: `MinimalPlugins` + `AssetPlugin` + `init_asset::<Mesh>()` and
+`init_asset::<StandardMaterial>()`. No window, no GPU. `StandardMaterial` is
+normally registered by the heavyweight `MaterialPlugin`, which is why the test
+app registers it directly.
+
+`player::integration_tests` drives the real `move_player` system with
+synthetic input and a manually advanced `Time`, which is how "does the capsule
+actually move" is checked without a window. Note that harness calls
+`ButtonInput::clear()` each step, so held keys must be re-pressed per frame.
+
+Feel itself is not tested and should not be — that is what the panel is for.
+
+Current status: 39 tests, all passing.
 
 ## Repository and CI
 
@@ -149,7 +184,8 @@ workflow job's `name:` — currently `verify gate` in `.github/workflows/ci.yml`
   (one sat silent for 29.5 minutes). If Linux coverage is wanted, add a second
   job and pin its apt sources to `archive.ubuntu.com` — do not move this job
   back.
-- The job sets `timeout-minutes: 30`. A required check that hangs makes `main`
+- The job sets `timeout-minutes: 60` (a cold run took 25m37s with Bevy alone;
+  bevy_egui adds to that). A required check that hangs makes `main`
   unmergeable, so hangs must fail fast. Note GitHub reports a job timeout as
   `cancelled`, not `failure`.
 - Tests are headless, so CI needs no GPU or display.

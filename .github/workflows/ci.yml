@@ -29,7 +29,11 @@ jobs:
     # Without this a hung step runs to GitHub's 6h job limit. Because this
     # job is a required status check, a hang would make main unmergeable
     # rather than merely slow.
-    timeout-minutes: 30
+    #
+    # 60, not 30: the last cold run took 25m37s with Bevy alone, and adding
+    # bevy_egui makes that longer. A required check that times out on a cold
+    # cache blocks every merge, so the headroom is deliberate.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
