@@ -11,18 +11,27 @@ env:
 jobs:
   verify:
     name: verify gate
-    runs-on: ubuntu-latest
+    # macOS, not Ubuntu, and deliberately so.
+    #
+    # Four consecutive Ubuntu runs hung in `apt-get update`: the runner's
+    # azure.archive.ubuntu.com mirror accepted connections and never
+    # responded, and Acquire::http::Timeout did not fire on that path. One
+    # run sat silent for 29.5 minutes before the job timeout killed it.
+    #
+    # macOS needs no system packages at all for Bevy, which removes that
+    # entire failure class, and it matches the development platform
+    # (aarch64-apple-darwin). Runner minutes are free because this repo is
+    # public.
+    #
+    # To restore Linux coverage later, add a second job rather than moving
+    # this one back, and pin its apt sources to archive.ubuntu.com.
+    runs-on: macos-latest
+    # Without this a hung step runs to GitHub's 6h job limit. Because this
+    # job is a required status check, a hang would make main unmergeable
+    # rather than merely slow.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-
-      # Package list taken verbatim from Bevy's shipped
-      # docs/linux_dependencies.md (bevy 0.19.1), Ubuntu section.
-      # The dev machine is macOS; these are needed only on Linux runners.
-      - name: Install Bevy Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y \
-            g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -34,6 +43,6 @@ jobs:
       - name: Toolchain verify command
         run: rustc --version && cargo --version && cargo check
 
-      # Tests are headless (MinimalPlugins) — no GPU or display needed.
+      # Tests are headless (MinimalPlugins) - no GPU or display needed.
       - name: Tests
         run: cargo test

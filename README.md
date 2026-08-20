@@ -39,8 +39,8 @@ Behaviour changes go spec → failing test → code. Add the SPEC line to the
 `src/main.rs` doc comment, add the test, watch it fail for the right reason,
 then implement.
 
-`main` is protected by convention: work happens on a branch and merges via pull
-request. CI runs the verify gate on every push and PR.
+`main` is protected: direct pushes are rejected. Work happens on a branch and
+merges via pull request, and the `verify gate` CI check must pass first.
 
 ## Licence
 
